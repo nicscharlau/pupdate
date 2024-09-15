@@ -28,7 +28,7 @@ public partial class CoresService : BaseProcess
                 if (parsed.TryGetValue("data", out var coresList))
                 {
                     cores = coresList;
-                    cores.AddRange(this.GetLocalCores());
+                    cores.AddRange(GetLocalCores());
                 }
             }
 
@@ -69,7 +69,7 @@ public partial class CoresService : BaseProcess
     public CoresService(string path, SettingsService settingsService, ArchiveService archiveService,
         AssetsService assetsService)
     {
-        this.installPath = path;
+        installPath = path;
         this.settingsService = settingsService;
         this.archiveService = archiveService;
         this.assetsService = assetsService;
@@ -77,25 +77,25 @@ public partial class CoresService : BaseProcess
 
     public Core GetCore(string identifier)
     {
-        return this.Cores.Find(i => i.identifier == identifier);
+        return Cores.Find(i => i.identifier == identifier);
     }
 
     public bool IsInstalled(string identifier)
     {
         // Should this just check the Installed Cores collection instead?
-        string localCoreFile = Path.Combine(this.installPath, "Cores", identifier, "core.json");
+        string localCoreFile = Path.Combine(installPath, "Cores", identifier, "core.json");
 
         return File.Exists(localCoreFile);
     }
 
     public Core GetInstalledCore(string identifier)
     {
-        return this.InstalledCores.Find(i => i.identifier == identifier);
+        return InstalledCores.Find(i => i.identifier == identifier);
     }
 
     public void RefreshInstalledCores()
     {
-        installedCores = cores.Where(c => this.IsInstalled(c.identifier)).ToList();
+        installedCores = cores.Where(c => IsInstalled(c.identifier)).ToList();
         installedCoresWithSponsors = installedCores.Where(c => c.sponsor != null).ToList();
     }
 
@@ -108,16 +108,16 @@ public partial class CoresService : BaseProcess
             return false;
         }
 
-        if (clean && this.IsInstalled(core.identifier))
+        if (clean && IsInstalled(core.identifier))
         {
-            this.Delete(core.identifier, core.platform_id);
+            Delete(core.identifier, core.platform_id);
         }
 
         // iterate through assets to find the zip release
-        if (this.InstallGithubAsset(core.identifier, core.platform_id, core.download_url))
+        if (InstallGithubAsset(core.identifier, core.platform_id, core.download_url))
         {
-            this.ReplaceCheck(core.identifier);
-            this.CheckForPocketExtras(core.identifier);
+            ReplaceCheck(core.identifier);
+            CheckForPocketExtras(core.identifier);
 
             return true;
         }
@@ -131,10 +131,10 @@ public partial class CoresService : BaseProcess
 
         Delete(identifier, platformId, nuke);
 
-        this.settingsService.DisableCore(identifier);
-        this.settingsService.DisablePocketExtras(identifier);
-        this.settingsService.Save();
-        this.RefreshInstalledCores();
+        settingsService.DisableCore(identifier);
+        settingsService.DisablePocketExtras(identifier);
+        settingsService.Save();
+        RefreshInstalledCores();
 
         WriteMessage("Finished.");
         Divide();
@@ -146,7 +146,7 @@ public partial class CoresService : BaseProcess
 
         foreach (string folder in folders)
         {
-            string path = Path.Combine(this.installPath, folder, identifier);
+            string path = Path.Combine(installPath, folder, identifier);
 
             if (Directory.Exists(path))
             {
@@ -157,7 +157,7 @@ public partial class CoresService : BaseProcess
 
         if (nuke)
         {
-            string path = Path.Combine(this.installPath, "Assets", platformId, identifier);
+            string path = Path.Combine(installPath, "Assets", platformId, identifier);
 
             if (Directory.Exists(path))
             {

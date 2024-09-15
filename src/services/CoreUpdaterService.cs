@@ -23,7 +23,7 @@ public class CoreUpdaterService : BaseProcess
         SettingsService settingsService,
         CoresService coresService)
     {
-        this.installPath = path;
+        installPath = path;
         this.cores = cores;
         this.firmwareService = firmwareService;
         this.settingsService = settingsService;
@@ -34,12 +34,12 @@ public class CoreUpdaterService : BaseProcess
 
     public void BuildInstanceJson(bool overwrite = false, string coreName = null)
     {
-        foreach (Core core in this.cores)
+        foreach (Core core in cores)
         {
-            if (this.coresService.CheckInstancePackager(core.identifier) && (coreName == null || coreName == core.identifier))
+            if (coresService.CheckInstancePackager(core.identifier) && (coreName == null || coreName == core.identifier))
             {
                 WriteMessage(core.identifier);
-                this.coresService.BuildInstanceJson(core.identifier, overwrite);
+                coresService.BuildInstanceJson(core.identifier, overwrite);
                 Divide();
             }
         }
@@ -56,17 +56,17 @@ public class CoreUpdaterService : BaseProcess
         List<string> missingBetaKeys = new List<string>();
         string firmwareDownloaded = null;
 
-        if (this.settingsService.GetConfig().backup_saves)
+        if (settingsService.GetConfig().backup_saves)
         {
-            AssetsService.BackupSaves(this.installPath, this.settingsService.GetConfig().backup_saves_location);
-            AssetsService.BackupMemories(this.installPath, this.settingsService.GetConfig().backup_saves_location);
+            AssetsService.BackupSaves(installPath, settingsService.GetConfig().backup_saves_location);
+            AssetsService.BackupMemories(installPath, settingsService.GetConfig().backup_saves_location);
         }
 
-        if (this.settingsService.GetConfig().download_firmware && ids == null)
+        if (settingsService.GetConfig().download_firmware && ids == null)
         {
-            if (this.firmwareService != null)
+            if (firmwareService != null)
             {
-                firmwareDownloaded = this.firmwareService.UpdateFirmware(this.installPath);
+                firmwareDownloaded = firmwareService.UpdateFirmware(installPath);
             }
             else
             {
@@ -76,11 +76,11 @@ public class CoreUpdaterService : BaseProcess
             Divide();
         }
 
-        bool jtBetaKeyExists = this.coresService.ExtractBetaKey();
+        bool jtBetaKeyExists = coresService.ExtractBetaKey();
 
-        foreach (var core in this.cores.Where(core => ids == null || ids.Any(id => id == core.identifier)))
+        foreach (var core in cores.Where(core => ids == null || ids.Any(id => id == core.identifier)))
         {
-            var coreSettings = this.settingsService.GetCoreSettings(core.identifier);
+            var coreSettings = settingsService.GetCoreSettings(core.identifier);
 
             try
             {
@@ -104,14 +104,14 @@ public class CoreUpdaterService : BaseProcess
 
                 WriteMessage("Checking Core: " + core.identifier);
 
-                PocketExtra pocketExtra = this.coresService.GetPocketExtra(core.identifier);
+                PocketExtra pocketExtra = coresService.GetPocketExtra(core.identifier);
                 bool isPocketExtraCombinationPlatform = coreSettings.pocket_extras &&
                                                         pocketExtra is { type: PocketExtraType.combination_platform };
                 string mostRecentRelease;
 
                 if (core.version == null && coreSettings.pocket_extras)
                 {
-                    mostRecentRelease = this.coresService.GetMostRecentRelease(pocketExtra);
+                    mostRecentRelease = coresService.GetMostRecentRelease(pocketExtra);
                 }
                 else
                 {
@@ -125,16 +125,16 @@ public class CoreUpdaterService : BaseProcess
                 {
                     WriteMessage("No releases found. Skipping.");
 
-                    var isBetaCore = this.coresService.IsBetaCore(core.identifier);
+                    var isBetaCore = coresService.IsBetaCore(core.identifier);
 
                     if (isBetaCore.Item1)
                     {
                         core.beta_slot_id = isBetaCore.Item2;
                         core.beta_slot_platform_id_index = isBetaCore.Item3;
-                        this.coresService.CopyBetaKey(core);
+                        coresService.CopyBetaKey(core);
                     }
 
-                    results = this.coresService.DownloadAssets(core);
+                    results = coresService.DownloadAssets(core);
                     installedAssets.AddRange(results["installed"] as List<string>);
                     skippedAssets.AddRange(results["skipped"] as List<string>);
 
@@ -150,9 +150,9 @@ public class CoreUpdaterService : BaseProcess
 
                 WriteMessage(mostRecentRelease + " is the most recent release, checking local core...");
 
-                if (this.coresService.IsInstalled(core.identifier))
+                if (coresService.IsInstalled(core.identifier))
                 {
-                    AnalogueCore localCore = this.coresService.ReadCoreJson(core.identifier);
+                    AnalogueCore localCore = coresService.ReadCoreJson(core.identifier);
                     string localVersion = isPocketExtraCombinationPlatform
                         ? coreSettings.pocket_extras_version
                         : localCore.metadata.version;
@@ -168,13 +168,13 @@ public class CoreUpdaterService : BaseProcess
                     }
                     else
                     {
-                        var isBetaCore = this.coresService.IsBetaCore(core.identifier);
+                        var isBetaCore = coresService.IsBetaCore(core.identifier);
 
                         if (isBetaCore.Item1)
                         {
                             core.beta_slot_id = isBetaCore.Item2;
                             core.beta_slot_platform_id_index = isBetaCore.Item3;
-                            this.coresService.CopyBetaKey(core);
+                            coresService.CopyBetaKey(core);
                         }
 
                         if (coreSettings.pocket_extras &&
@@ -182,13 +182,13 @@ public class CoreUpdaterService : BaseProcess
                             pocketExtra.type != PocketExtraType.combination_platform)
                         {
                             WriteMessage("Pocket Extras found: " + coreSettings.pocket_extras_version);
-                            var version = this.coresService.GetMostRecentRelease(pocketExtra);
+                            var version = coresService.GetMostRecentRelease(pocketExtra);
                             WriteMessage(version + " is the most recent release...");
 
                             if (coreSettings.pocket_extras_version != version)
                             {
                                 WriteMessage("Updating Pocket Extras...");
-                                this.coresService.GetPocketExtra(pocketExtra, this.installPath, false, false);
+                                coresService.GetPocketExtra(pocketExtra, installPath, false, false);
                             }
                             else
                             {
@@ -196,7 +196,7 @@ public class CoreUpdaterService : BaseProcess
                             }
                         }
 
-                        results = this.coresService.DownloadAssets(core);
+                        results = coresService.DownloadAssets(core);
 
                         if (!coreSettings.pocket_extras)
                         {
@@ -223,12 +223,12 @@ public class CoreUpdaterService : BaseProcess
 
                 if (isPocketExtraCombinationPlatform)
                 {
-                    if (clean && this.coresService.IsInstalled(core.identifier))
+                    if (clean && coresService.IsInstalled(core.identifier))
                     {
-                        this.coresService.Delete(core.identifier, core.platform_id);
+                        coresService.Delete(core.identifier, core.platform_id);
                     }
 
-                    this.coresService.GetPocketExtra(pocketExtra, this.installPath, false, false);
+                    coresService.GetPocketExtra(pocketExtra, installPath, false, false);
 
                     Dictionary<string, string> summary = new Dictionary<string, string>
                     {
@@ -239,7 +239,7 @@ public class CoreUpdaterService : BaseProcess
 
                     installed.Add(summary);
                 }
-                else if (this.coresService.Install(core, clean))
+                else if (coresService.Install(core, clean))
                 {
                     Dictionary<string, string> summary = new Dictionary<string, string>
                     {
@@ -255,13 +255,13 @@ public class CoreUpdaterService : BaseProcess
                          pocketExtra.type != PocketExtraType.combination_platform)
                 {
                     WriteMessage("Pocket Extras found: " + coreSettings.pocket_extras_version);
-                    var version = this.coresService.GetMostRecentRelease(pocketExtra);
+                    var version = coresService.GetMostRecentRelease(pocketExtra);
                     WriteMessage(version + " is the most recent release...");
 
                     if (coreSettings.pocket_extras_version != version)
                     {
                         WriteMessage("Updating Pocket Extras...");
-                        this.coresService.GetPocketExtra(pocketExtra, this.installPath, false, false);
+                        coresService.GetPocketExtra(pocketExtra, installPath, false, false);
                     }
                     else
                     {
@@ -271,16 +271,16 @@ public class CoreUpdaterService : BaseProcess
 
                 JotegoRename(core);
 
-                var isJtBetaCore = this.coresService.IsBetaCore(core.identifier);
+                var isJtBetaCore = coresService.IsBetaCore(core.identifier);
 
                 if (isJtBetaCore.Item1)
                 {
                     core.beta_slot_id = isJtBetaCore.Item2;
                     core.beta_slot_platform_id_index = isJtBetaCore.Item3;
-                    this.coresService.CopyBetaKey(core);
+                    coresService.CopyBetaKey(core);
                 }
 
-                results = this.coresService.DownloadAssets(core);
+                results = coresService.DownloadAssets(core);
                 installedAssets.AddRange(results["installed"] as List<string>);
                 skippedAssets.AddRange(results["skipped"] as List<string>);
 
@@ -303,9 +303,9 @@ public class CoreUpdaterService : BaseProcess
             }
         }
 
-        this.coresService.DeleteBetaKey();
-        this.coresService.RefreshLocalCores();
-        this.coresService.RefreshInstalledCores();
+        coresService.DeleteBetaKey();
+        coresService.RefreshLocalCores();
+        coresService.RefreshInstalledCores();
 
         UpdateProcessCompleteEventArgs args = new UpdateProcessCompleteEventArgs
         {
@@ -323,18 +323,18 @@ public class CoreUpdaterService : BaseProcess
 
     private void JotegoRename(Core core)
     {
-        if (this.settingsService.GetConfig().fix_jt_names &&
-            this.settingsService.GetCoreSettings(core.identifier).platform_rename &&
+        if (settingsService.GetConfig().fix_jt_names &&
+            settingsService.GetCoreSettings(core.identifier).platform_rename &&
             core.identifier.Contains("jotego"))
         {
             core.platform_id = core.identifier.Split('.')[1];
 
-            string path = Path.Combine(this.installPath, "Platforms", core.platform_id + ".json");
+            string path = Path.Combine(installPath, "Platforms", core.platform_id + ".json");
             string json = File.ReadAllText(path);
             Dictionary<string, Platform> data = JsonConvert.DeserializeObject<Dictionary<string, Platform>>(json);
             Platform platform = data["platform"];
 
-            if (this.coresService.RenamedPlatformFiles.TryGetValue(core.platform_id, out string value) &&
+            if (coresService.RenamedPlatformFiles.TryGetValue(core.platform_id, out string value) &&
                 platform.name == core.platform_id)
             {
                 WriteMessage("Updating JT Platform Name...");
@@ -350,20 +350,20 @@ public class CoreUpdaterService : BaseProcess
         // Load it from the core.json file if it's missing.
         if (string.IsNullOrEmpty(core.platform_id))
         {
-            var analogueCore = this.coresService.ReadCoreJson(core.identifier);
+            var analogueCore = coresService.ReadCoreJson(core.identifier);
 
             core.platform_id = analogueCore.metadata.platform_ids[0];
         }
 
-        if (this.settingsService.GetConfig().delete_skipped_cores || force)
+        if (settingsService.GetConfig().delete_skipped_cores || force)
         {
-            this.coresService.Uninstall(core.identifier, core.platform_id, nuke);
+            coresService.Uninstall(core.identifier, core.platform_id, nuke);
         }
     }
 
     public void ReloadSettings()
     {
-        this.settingsService = ServiceHelper.SettingsService;;
-        this.coresService = ServiceHelper.CoresService;
+        settingsService = ServiceHelper.SettingsService;
+        coresService = ServiceHelper.CoresService;
     }
 }

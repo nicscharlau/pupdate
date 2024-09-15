@@ -1,4 +1,3 @@
-using System.IO.Compression;
 using Pannella.Helpers;
 using Pannella.Models.Analogue.Shared;
 using Pannella.Models.Extras;
@@ -12,7 +11,7 @@ public partial class CoresService
 {
     private IEnumerable<Core> GetLocalCores()
     {
-        string coresDirectory = Path.Combine(this.installPath, "Cores");
+        string coresDirectory = Path.Combine(installPath, "Cores");
 
         // Create if it doesn't exist. -- Should we do this?
         // Stops error from being thrown if we do.
@@ -29,7 +28,7 @@ public partial class CoresService
             if (!matches.Any())
             {
                 Core c = new Core { identifier = n };
-                c.platform = this.ReadPlatformJson(c.identifier);
+                c.platform = ReadPlatformJson(c.identifier);
                 all.Add(c);
             }
         }
@@ -39,7 +38,7 @@ public partial class CoresService
 
     public void RefreshLocalCores()
     {
-        cores.AddRange(this.GetLocalCores());
+        cores.AddRange(GetLocalCores());
     }
 
     private bool InstallGithubAsset(string identifier, string platformId, string downloadUrl)
@@ -64,11 +63,11 @@ public partial class CoresService
         ZipHelper.ExtractToDirectory(zipPath, tempDir, true);
 
         // Clean problematic directories and files.
-        Util.CleanDir(tempDir, this.installPath, this.settingsService.GetConfig().preserve_platforms_folder, false, platformId);
+        Util.CleanDir(tempDir, installPath, settingsService.GetConfig().preserve_platforms_folder, false, platformId);
 
         // Move the files into place and delete our core's temp directory.
         WriteMessage("Installing...");
-        Util.CopyDirectory(tempDir, this.installPath, true, true);
+        Util.CopyDirectory(tempDir, installPath, true, true);
         Directory.Delete(tempDir, true);
 
         // See if the temp directory itself can be removed.
@@ -85,23 +84,23 @@ public partial class CoresService
 
     private void CheckForPocketExtras(string identifier)
     {
-        var coreSettings = this.settingsService.GetCoreSettings(identifier);
+        var coreSettings = settingsService.GetCoreSettings(identifier);
 
         if (coreSettings.pocket_extras)
         {
-            PocketExtra pocketExtra = this.GetPocketExtra(identifier);
+            PocketExtra pocketExtra = GetPocketExtra(identifier);
 
             if (pocketExtra != null)
             {
                 WriteMessage("Reapplying Pocket Extras...");
-                this.GetPocketExtra(pocketExtra, this.installPath, false, true);
+                GetPocketExtra(pocketExtra, installPath, false, true);
             }
         }
     }
 
     private bool CheckCrc(string filePath, ArchiveFile archiveFile)
     {
-        if (!this.settingsService.GetConfig().crc_check)
+        if (!settingsService.GetConfig().crc_check)
         {
             return true;
         }
@@ -122,9 +121,9 @@ public partial class CoresService
 
     private bool CheckBetaMd5(DataSlot slot, string betaSlotId, string platform)
     {
-        if (slot.md5 != null && (betaSlotId != null && slot.id == betaSlotId))
+        if (slot.md5 != null && betaSlotId != null && slot.id == betaSlotId)
         {
-            string path = Path.Combine(this.installPath, "Assets", platform);
+            string path = Path.Combine(installPath, "Assets", platform);
             string filePath = Path.Combine(path, "common", slot.filename);
             bool exists;
             bool checksum = false;
