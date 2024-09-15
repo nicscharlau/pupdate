@@ -370,7 +370,7 @@ internal partial class Program
             {
                 menu.Add("Next Page", thisMenu =>
                 {
-                    offset += pageSize;
+                    offset += pageSize + 1;
                     thisMenu.CloseMenu();
                 });
             }
@@ -408,7 +408,7 @@ internal partial class Program
             {
                 menu.Add("Next Page", thisMenu =>
                 {
-                    offset += pageSize;
+                    offset += pageSize + 1;
                     thisMenu.CloseMenu();
                 });
             }
