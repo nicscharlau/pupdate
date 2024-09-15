@@ -44,7 +44,7 @@ internal partial class Program
 
         var pocketSetupMenu = new ConsoleMenu()
             .Configure(menuConfig)
-            .Add("Jotego Analogizer Config", _=>
+            .Add("Jotego Analogizer Config", _ =>
             {
                 AnalogizerSettingsService settings = new AnalogizerSettingsService();
                 settings.RunAnalogizerSettings();
@@ -84,10 +84,10 @@ internal partial class Program
             })
             .Add("Apply 8:7 Aspect Ratio to Super GameBoy cores", () =>
             {
-                var results = ShowCoresMenu(
+                Dictionary<string, bool> results = ShowCoresMenu(
                     ServiceHelper.CoresService.InstalledCores.Where(c => c.identifier.StartsWith("Spiritualized.SuperGB")).ToList(),
-                    "Which Super GameBoy cores would you like to change to the 8:7 aspect ratio?\n",
-                    false);
+                    "Which Super GameBoy cores would you like to change to the 8:7 aspect ratio?\n"
+                );
 
                 foreach (var item in results.Where(x => x.Value))
                 {
@@ -103,10 +103,10 @@ internal partial class Program
             })
             .Add("Restore 4:3 Aspect Ratio to Super GameBoy cores", () =>
             {
-                var results = ShowCoresMenu(
+                Dictionary<string, bool> results = ShowCoresMenu(
                     ServiceHelper.CoresService.InstalledCores.Where(c => c.identifier.StartsWith("Spiritualized.SuperGB")).ToList(),
-                    "Which Super GameBoy cores would you like to change to the 8:7 aspect ratio?\n",
-                    false);
+                    "Which Super GameBoy cores would you like to change to the 8:7 aspect ratio?\n"
+                );
 
                 foreach (var item in results.Where(x => x.Value))
                 {
@@ -122,7 +122,7 @@ internal partial class Program
             })
             .Add("Go Back", ConsoleMenu.Close);
 
-        var pocketMaintenanceMenu = new ConsoleMenu()
+        ConsoleMenu pocketMaintenanceMenu = new ConsoleMenu()
             .Configure(menuConfig)
             .Add("Reinstall All Cores", _ =>
             {
@@ -131,13 +131,13 @@ internal partial class Program
             })
             .Add("Reinstall Select Cores", _ =>
             {
-                var results = ShowCoresMenu(
+                Dictionary<string, bool> results = ShowCoresMenu(
                     ServiceHelper.CoresService.InstalledCores,
-                    "Which cores would you like to reinstall?",
-                    false);
-                var identifiers = results.Where(x => x.Value)
-                                               .Select(x => x.Key)
-                                               .ToArray();
+                    "Which cores would you like to reinstall?"
+                );
+                string[] identifiers = results.Where(x => x.Value)
+                                         .Select(x => x.Key)
+                                         .ToArray();
 
                 if (identifiers.Length > 0)
                 {
@@ -148,10 +148,10 @@ internal partial class Program
             })
             .Add("Uninstall Select Cores", () =>
             {
-                var results = ShowCoresMenu(
+                Dictionary<string, bool> results = ShowCoresMenu(
                     ServiceHelper.CoresService.InstalledCores,
-                    "Which cores would you like to uninstall?",
-                    false);
+                    "Which cores would you like to uninstall?"
+                );
                 var selectResults = results.Where(x => x.Value).ToList();
 
                 if (selectResults.Count > 0)
@@ -345,26 +345,26 @@ internal partial class Program
         return result.Value;
     }
 
-    private static Dictionary<string, bool> ShowCoresMenu(List<Core> cores, string message, bool isCoreSelection)
+    private static Dictionary<string, bool> ShowCoresMenu(List<Core> cores, string message)
     {
-        const int pageSize = 15;
-        var offset = 0;
+        const int pageSize = 20;
+        int offset = 0;
         bool more = true;
-        var results = new Dictionary<string, bool>();
+        Dictionary<string, bool> results = new();
 
         while (more)
         {
-            var menu = new ConsoleMenu()
+            ConsoleMenu menu = new ConsoleMenu()
                 .Configure(config =>
                 {
                     config.Selector = "=>";
                     config.EnableWriteTitle = false;
-                    config.WriteHeaderAction = () => Console.WriteLine($"{message} Use enter to check/uncheck your choices.");
+                    config.WriteHeaderAction = () => Console.WriteLine($"{message}\nUse enter to check/uncheck your choices.");
                     config.SelectedItemBackgroundColor = Console.ForegroundColor;
                     config.SelectedItemForegroundColor = Console.BackgroundColor;
                     config.WriteItemAction = item => Console.Write("{0}", item.Name);
                 });
-            var current = -1;
+            int current = -1;
 
             if ((offset + pageSize) <= cores.Count)
             {
@@ -381,10 +381,10 @@ internal partial class Program
 
                 if ((current <= (offset + pageSize)) && (current >= offset))
                 {
-                    var coreSettings = ServiceHelper.SettingsService.GetCoreSettings(core.identifier);
-                    var selected = isCoreSelection && !coreSettings.skip;
-                    var name = core.identifier;
-                    var title = MenuItemName(name, selected, core.requires_license);
+                    CoreSettings coreSettings = ServiceHelper.SettingsService.GetCoreSettings(core.identifier);
+                    bool selected = false;
+                    string name = core.identifier;
+                    string title = MenuItemName(name, selected, core.requires_license);
 
                     menu.Add(title, thisMenu =>
                     {
@@ -436,7 +436,7 @@ internal partial class Program
         }
         else
         {
-            var results = ShowCoresMenu(cores, message, true);
+            Dictionary<string, bool> results = ShowCoresMenu(cores, message);
 
             foreach (var item in results)
             {
